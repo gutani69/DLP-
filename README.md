@@ -1,49 +1,84 @@
 # DLP — Data Loss Prevention
 
-A graduation-project scaffold for a prototype **Data Loss Prevention (DLP)** platform, with planned endpoint monitoring and automated security-configuration checks.
+A lightweight Python prototype for identifying sensitive information in files, applying configurable allow/warn/block policies, and recording security events through a small Flask server and web dashboard.
 
-## Repository layout
+The project is designed as a simple client-server application:
+- **Agent** runs on an endpoint, inspects files, evaluates policy, and invokes the configured enforcement adapter.
+- **Server** provides a Flask API, stores events, and serves a dashboard for reviewing detections and policy outcomes.
+- **Common** contains data structures shared by the agent and server.
 
-- `common/` — shared schemas and data structures
-- `agent/` — endpoint-side monitoring and enforcement adapters
-- `detection/` — sensitive-data detection engine
-- `policy/` — allow/warn/block policy decisions
-- `server/` — Flask management API
-- `dashboard/` — future administrator UI
-- `tests/` — automated tests
-- `docs/` — architecture and design notes
-- `deploy/` — container/deployment assets
+## Project structure
 
-## Quick start
+```text
+agent/
+  main.py                 # Agent entry point
+  monitor.py              # File-event monitoring boundary
+  pipeline.py             # Connects inspection, policy, and enforcement
+  enforcement.py           # Enforcement adapter boundary
+  detection/
+    scanner.py             # File inspection
+    rules.py               # Sensitive-data detection rules
+  policy/
+    engine.py              # ALLOW / WARN / BLOCK decisions
+server/
+  app.py                   # Flask application
+  routes.py                # API and dashboard routes
+  storage.py               # Event persistence
+  templates/index.html     # Dashboard page
+  static/css/style.css     # Dashboard styles
+  static/js/dashboard.js   # Dashboard behavior
+common/
+  schemas.py               # Shared event and result structures
+tests/
+  test_detection.py
+  test_policy.py
+  test_api.py
+docs/
+  architecture.md
+```
+
+## Current status
+
+This repository is a **starter scaffold**. The files define the intended component boundaries; they do not yet implement a complete DLP system. In particular, file monitoring is not the same as preventing uploads, and a policy decision of `BLOCK` does not prove an operation was blocked. Enforcement must be implemented and tested for the target operating system and transfer path.
+
+## Development setup
 
 Requires Python 3.11 or newer.
 
 ```bash
 python -m venv .venv
-# Windows: .venv\Scripts\activate
-# Linux/macOS: source .venv/bin/activate
-python -m pip install -e ".[dev]"
-pytest
-python -m server.app
 ```
 
-Then open `http://127.0.0.1:5000/health` or `/api/v1/status`.
+Activate the environment:
 
-## Current status
+- Windows PowerShell: `.venv\\Scripts\\Activate.ps1`
+- Linux/macOS: `source .venv/bin/activate`
 
-This repository is an initial scaffold, not a production DLP product. Detection currently uses simple text-marker matching. Policy decisions are prototypes; no app-independent upload blocking, operating-system enforcement, authentication, persistent audit storage, or configuration remediation is implemented yet.
+Install the small set of application dependencies:
 
-## Planned work
+```bash
+python -m pip install -r requirements.txt
+```
 
-1. Expand file inspection and define sensitive-data rules.
-2. Add policy configuration and audit events.
-3. Design and implement endpoint enforcement with a documented threat model.
-4. Add configuration-compliance checks and safe remediation.
-5. Build the admin dashboard, authentication, and persistence.
-6. Add integration tests and deployment hardening.
+Run tests with:
+
+```bash
+python -m pytest
+```
+
+The server entry point will be `python -m server.app` once the Flask application is implemented.
+
+## Team workflow
+
+- `main` is the shared stable branch.
+- `Agent` is for endpoint agent, detection, policy, and enforcement work.
+- `Server` is for the Flask API, event storage, and dashboard.
+- Use feature branches and pull requests to merge reviewed changes into `main`.
+- Keep shared structures in `common/schemas.py` and coordinate changes with both teams.
 
 ## Security notes
 
-- Never commit credentials, tokens, real sensitive documents, or local `.env` files.
-- Avoid recording file contents in logs.
-- Treat any enforcement result as advisory until an OS-level or network enforcement control is implemented and tested.
+- Use synthetic test data; do not commit real sensitive files or credentials.
+- Keep local secrets in an untracked `.env` file.
+- Avoid writing sensitive file contents or matched secret values to logs.
+- Treat enforcement results as untrusted until the underlying control has been verified.
